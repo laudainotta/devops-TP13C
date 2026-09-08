@@ -1,0 +1,144 @@
+name: autoscan
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  BACKEND_IMAGE: laudainotta/notes-backend
+  FRONTEND_IMAGE: laudainotta/notes-frontend
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar flake8
+        run: pip install flake8
+      - name: Lint del backend
+        run: flake8 backend --max-line-length=120 --exclude=__pycache__ --count
+      - name: Validar manifiestos y plan de ZAP
+        run: |
+          pip install pyyaml
+          for f in $(find k8s .zap -name '*.yaml'); do
+            python -c "import yaml,sys; list(yaml.safe_load_all(open('$f'))); print('OK  $f')"
+          done
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependencias
+        run: pip install -r backend/requirements.txt
+      - name: Smoke test de instrumentación
+        run: |
+          cd backend
+          python - <<'PY'
+          import app
+          rutas = sorted(str(r) for r in app.app.url_map.iter_rules())
+          print("\n".join(rutas))
+          assert any('/metrics' in r for r in rutas), "falta el endpoint /metrics"
+          print("OK: endpoint de metricas presente")
+          PY
+
+  build-push:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build y push del backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          target: final
+          push: true
+          tags: ${{ env.BACKEND_IMAGE }}:tp13c,${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+      - name: Build y push del frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE }}:tp13c,${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+  deploy-scan:
+    runs-on: [self-hosted, k3d]
+    needs: build-push
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Estado previo del clúster
+        run: |
+          kubectl get nodes
+          kubectl -n notes-app get pods
+
+      - name: Desplegar la aplicación
+        run: |
+          kubectl apply -f k8s/base/00-namespace.yaml
+          kubectl apply -f k8s/base/01-postgres.yaml
+          kubectl apply -f k8s/base/02-backend.yaml
+          kubectl apply -f k8s/base/03-frontend.yaml
+          kubectl -n notes-app set image deploy/backend backend=${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          kubectl -n notes-app set image deploy/frontend frontend=${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          kubectl -n notes-app rollout status deploy/backend --timeout=300s
+          kubectl -n notes-app rollout status deploy/frontend --timeout=180s
+
+      - name: Verificación previa al escaneo
+        run: bash scripts/verificar-tp13c.sh
+
+      - name: Ejecutar ZAP como Job de Kubernetes
+        run: |
+          kubectl -n notes-app create configmap zap-plan \
+            --from-file=zap-plan.yaml=.zap/zap-plan.yaml --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n notes-app delete job zap-scan --ignore-not-found
+          kubectl apply -f k8s/base/04-zap-job.yaml
+          sleep 15
+          kubectl -n notes-app logs -f job/zap-scan --pod-running-timeout=300s
+          kubectl -n notes-app wait --for=condition=complete job/zap-scan --timeout=1800s
+
+      - name: Extraer reportes del PVC
+        if: always()
+        run: bash scripts/extract-zap-reports.sh ./reports
+
+      - name: Subir reportes como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-reports-${{ github.sha }}
+          path: reports/
+          retention-days: 14
+
+      - name: Resumen de alertas
+        if: always()
+        run: |
+          echo "### Escaneo ZAP — \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json, collections
+          try:
+              d = json.load(open('reports/zap-report-tp13c.json'))
+          except Exception as e:
+              print(f"No se pudo leer el SARIF: {e}"); raise SystemExit(0)
+          c = collections.Counter(r.get('level','none') for run in d['runs'] for r in run.get('results',[]))
+          print(f"\nResultados por nivel: **{dict(c)}**\n")
+          rules = {r['id']: r.get('shortDescription',{}).get('text','') for run in d['runs'] for r in run['tool']['driver'].get('rules',[])}
+          seen = set()
+          print("| Nivel | Regla | Descripción |")
+          print("|---|---|---|")
+          for run in d['runs']:
+              for res in run.get('results', []):
+                  rid = res['ruleId']
+                  if rid in seen: continue
+                  seen.add(rid)
+                  print(f"| {res.get('level')} | {rid} | {rules.get(rid,'')[:70]} |")
+          PY
