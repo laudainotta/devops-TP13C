@@ -7,8 +7,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Mock de psycopg2 para no necesitar Postgres en los tests unitarios
-from unittest.mock import patch, MagicMock
-
+from unittest.mock import patch, MagicMock  # noqa: E402
 
 
 @pytest.fixture
@@ -24,7 +23,6 @@ def mock_db():
         yield mock_cursor
 
 
-
 @pytest.fixture
 def client(mock_db):
     import app as flask_app
@@ -38,7 +36,6 @@ def test_health(client):
     assert r.status_code == 200
     data = json.loads(r.data)
     assert 'status' in data
-
 
 
 def test_get_notes(client):
@@ -57,7 +54,6 @@ def test_create_note(client):
     assert r.status_code == 201
 
 
-
 def test_create_note_sin_titulo(client):
     r = client.post(
         '/api/notes',
@@ -70,4 +66,3 @@ def test_create_note_sin_titulo(client):
 def test_delete_note(client):
     r = client.delete('/api/notes/1')
     assert r.status_code == 200
-
