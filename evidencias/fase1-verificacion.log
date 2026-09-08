@@ -1,0 +1,31 @@
+=== VERIFICACION FASE 1 - 2026-09-07T23:58:19+00:00 ===
+NAME                           READY   STATUS    RESTARTS   AGE    IP          NODE                         NOMINATED NODE   READINESS GATES
+pod/backend-6fc777c9db-snbbm   1/1     Running   0          114s   10.42.0.7   k3d-notes-cluster-agent-0    <none>           <none>
+pod/backend-6fc777c9db-z2xl5   1/1     Running   0          114s   10.42.2.5   k3d-notes-cluster-server-0   <none>           <none>
+pod/frontend-979d499b5-9mf6c   1/1     Running   0          114s   10.42.0.6   k3d-notes-cluster-agent-0    <none>           <none>
+pod/postgres-0                 1/1     Running   0          12m    10.42.1.5   k3d-notes-cluster-agent-1    <none>           <none>
+
+NAME                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE    SELECTOR
+service/backend-svc    ClusterIP   10.43.159.14   <none>        5000/TCP   115s   app=backend
+service/frontend-svc   ClusterIP   10.43.137.20   <none>        80/TCP     115s   app=frontend
+service/postgres-svc   ClusterIP   None           <none>        5432/TCP   12m    app=postgres
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES                             SELECTOR
+deployment.apps/backend    2/2     2            2           115s   backend      laudainotta/notes-backend:tp13c    app=backend
+deployment.apps/frontend   1/1     1            1           115s   frontend     laudainotta/notes-frontend:tp13c   app=frontend
+
+NAME                                 DESIRED   CURRENT   READY   AGE    CONTAINERS   IMAGES                             SELECTOR
+replicaset.apps/backend-6fc777c9db   2         2         2       115s   backend      laudainotta/notes-backend:tp13c    app=backend,pod-template-hash=6fc777c9db
+replicaset.apps/frontend-979d499b5   1         1         1       115s   frontend     laudainotta/notes-frontend:tp13c   app=frontend,pod-template-hash=979d499b5
+
+NAME                        READY   AGE   CONTAINERS   IMAGES
+statefulset.apps/postgres   1/1     12m   postgres     postgres:16-alpine
+
+NAME                                      CLASS   HOSTS         ADDRESS                            PORTS   AGE
+ingress.networking.k8s.io/notes-ingress   nginx   notes.local   172.18.0.2,172.18.0.3,172.18.0.4   80      115s
+--- health ---
+{"db":"connected","status":"ok","time":"2026-09-07T23:58:20.738825"}
+
+--- notas ---
+[{"content":"nota de prueba","created_at":"2026-09-07 23:57:40.253364","id":1,"title":"TP13C"}]
+

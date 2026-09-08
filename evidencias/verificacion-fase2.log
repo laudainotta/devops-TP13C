@@ -1,0 +1,21 @@
+=== 1. Diagnóstico de red (TP04) ===
+  [OK]   ping a notes.local
+127.0.0.1       notes.local
+=== 2. Estado del clúster (TP09) ===
+  [OK]   nodos Ready
+k3d-notes-cluster-agent-0    Ready   <none>          35m   v1.35.5+k3s1
+k3d-notes-cluster-agent-1    Ready   <none>          35m   v1.35.5+k3s1
+k3d-notes-cluster-server-0   Ready   control-plane   35m   v1.35.5+k3s1
+  [OK]   pods Running/Completed (0 fuera de estado)
+=== 3. Aplicación ===
+  [OK]   frontend HTTP 200
+  [OK]   endpoint de salud HTTP 200
+  [OK]   backend-svc con endpoints
+=== 4. Observabilidad ===
+  [OK]   Grafana responde en :3000 (HTTP 200)
+  [OK]   dashboard provisionado
+  [OK]   targets de Prometheus: 9 UP / 0 DOWN
+  [OK]   job notes-backend con 2 target(s) up
+  [OK]   job node-exporter con 3 target(s) up
+  [OK]   job cadvisor con 3 target(s) up
+=== RESULTADO: 12 OK, 0 FAIL ===

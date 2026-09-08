@@ -1,0 +1,15 @@
+=== FASE 3 - ESCANEO ZAP EN KUBERNETES - 2026-09-08T01:08:07+00:00 ===
+
+--- comparación de las tres corridas ---
+v1: risks=informational -> Job Failed (warning del AF). spiderAjax 357 URLs/3:00, activeScan 3:12. 12 warning + 12 note (incluye 40014 XSS persistente).
+v2: risks=info, base limpia -> OOMKilled exit 137 a los 4:32. JVM tomo -Xmx2485m de la RAM del host (9943MB), limite del pod 2560Mi.
+v3: -Xmx1600m + limite 3584Mi -> Automation plan succeeded, exit 0, 6m3s. 12 warning + 10 note.
+
+--- estado final ---
+NAME       STATUS     COMPLETIONS   DURATION   AGE   CONTAINERS   IMAGES                           SELECTOR
+zap-scan   Complete   1/1           6m3s       31m   zap          ghcr.io/zaproxy/zaproxy:stable   batch.kubernetes.io/controller-uid=5888688c-5957-4994-aa7d-1598309d612f
+NAME          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+zap-reports   Bound    pvc-b85fb560-7765-46d3-98a3-67d17c010f12   1Gi        RWO            local-path     <unset>                 48m
+
+--- notas en la base tras el escaneo ---
+199 notas

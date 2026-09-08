@@ -1,0 +1,59 @@
+---
+env:
+  contexts:
+    - name: "NotesApp"
+      urls:
+        - "http://frontend-svc.notes-app.svc.cluster.local"
+      includePaths:
+        - "http://frontend-svc.notes-app.svc.cluster.local/.*"
+      excludePaths:
+        - "http://frontend-svc.notes-app.svc.cluster.local/metrics.*"
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: passiveScan-config
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope: true
+
+  - type: spider
+    parameters:
+      context: "NotesApp"
+      url: "http://frontend-svc.notes-app.svc.cluster.local"
+      maxDuration: 3
+      maxDepth: 10
+
+  - type: spiderAjax
+    parameters:
+      context: "NotesApp"
+      url: "http://frontend-svc.notes-app.svc.cluster.local"
+      maxDuration: 3
+      browserId: "firefox-headless"
+      numberOfBrowsers: 1
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: activeScan
+    parameters:
+      context: "NotesApp"
+      maxRuleDurationInMins: 2
+      maxScanDurationInMins: 15
+
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "zap-report-tp13c"
+    risks: [high, medium, low, info]
+
+  - type: report
+    parameters:
+      template: "sarif-json"
+      reportDir: "/zap/wrk/reports"
+      reportFile: "zap-report-tp13c"
+    risks: [high, medium, low]

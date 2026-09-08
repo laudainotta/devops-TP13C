@@ -1,0 +1,21 @@
+=== FUZZING DIRIGIDO - 2026-09-08T01:11:28+00:00 ===
+12 payloads propios contra POST /api/notes (el AF de ZAP no tiene job de fuzzer nativo).
+
+Resultado: 11 x HTTP 201 (aceptados y reflejados intactos) + 1 x HTTP 500.
+- SQLi: sin efecto. psycopg2 usa consultas parametrizadas; el payload viaja como dato.
+- XSS/traversal/command/template: almacenados sin sanitizar y devueltos intactos en el JSON.
+- Payload de 5000 chars: HTTP 500 por StringDataRightTruncation (title es VARCHAR(200)).
+  La validacion de longitud la hace Postgres, no la app. Deberia ser 400, no 500.
+  La respuesta al cliente es la pagina generica de Werkzeug, sin traceback (correcto).
+
+--- esquema de la tabla ---
+                                        Table "public.notes"
+   Column   |            Type             | Collation | Nullable |              Default              
+------------+-----------------------------+-----------+----------+-----------------------------------
+ id         | integer                     |           | not null | nextval('notes_id_seq'::regclass)
+ title      | character varying(200)      |           | not null | 
+ content    | text                        |           |          | 
+ created_at | timestamp without time zone |           |          | now()
+Indexes:
+    "notes_pkey" PRIMARY KEY, btree (id)
+

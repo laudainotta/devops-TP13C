@@ -1,0 +1,52 @@
+
+# Secrets y credenciales
+.secrets
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+coverage.xml
+*.egg-info/
+venv/
+.venv/
+
+
+# Binarios y builds
+bin/
+build/
+dist/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Assets duplicados de reportes ZAP (una carpeta por corrida)
+reports/zap-report[0-9]*/
+
+# --- TP13C ---
+reports/*.html
+reports/*.json
+evidencias/*.html
+.env
+*.env
+!.env.example
+kubeconfig*
+*.kubeconfig
+*.pem
+*.key
+__pycache__/
+*.pyc
+backend/app.py.bak

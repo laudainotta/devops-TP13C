@@ -1,0 +1,65 @@
+=== ZAP Found Java version 17.0.20 ===
+=== Iniciando Automation Framework ===
+Found Java version 17.0.20
+Available memory: 9943 MB
+Using JVM args: -Xmx2485m
+443 [main] INFO  org.parosproxy.paros.Constant - Copying default configuration to /home/zap/.ZAP/config.xml
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/session
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/dirbuster
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/fuzzers
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/plugin
+failed to create fsnotify watcher: too many open files=== ZAP Found Java version 17.0.20 ===
+=== Iniciando Automation Framework ===
+Found Java version 17.0.20
+Available memory: 9943 MB
+Using JVM args: -Xmx2485m
+443 [main] INFO  org.parosproxy.paros.Constant - Copying default configuration to /home/zap/.ZAP/config.xml
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/session
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/dirbuster
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/fuzzers
+539 [main] INFO  org.parosproxy.paros.Constant - Creating directory /home/zap/.ZAP/plugin
+Sept 08, 2026 12:20:59 AM java.util.prefs.FileSystemPreferences$1 run
+INFO: Created user preferences directory.
+Job passiveScan-config set maxAlertsPerRule = 10
+Job passiveScan-config set scanOnlyInScope = true
+Job spider set context = NotesApp
+Job spider set url = http://frontend-svc.notes-app.svc.cluster.local
+Job spider set maxDuration = 3
+Job spider set maxDepth = 10
+Job spiderAjax set context = NotesApp
+Job spiderAjax set url = http://frontend-svc.notes-app.svc.cluster.local
+Job spiderAjax set maxDuration = 3
+Job spiderAjax set browserId = firefox-headless
+Job spiderAjax set numberOfBrowsers = 1
+Job passiveScan-wait set maxDuration = 5
+Job activeScan set context = NotesApp
+Job activeScan set maxRuleDurationInMins = 2
+Job activeScan set maxScanDurationInMins = 15
+Job report set template = traditional-html
+Job report set reportDir = /zap/wrk/reports
+Job report set reportFile = zap-report-tp13c
+Job report set template = sarif-json
+Job report set reportDir = /zap/wrk/reports
+Job report set reportFile = zap-report-tp13c
+Job passiveScan-config started
+Job passiveScan-config finished, time taken: 00:00:00
+Job spider started
+Job spider requesting URL http://frontend-svc.notes-app.svc.cluster.local
+Job spider found 3 URLs
+Job spider finished, time taken: 00:00:00
+Job spiderAjax started
+Job spiderAjax found 357 URLs
+Job spiderAjax finished, time taken: 00:03:00
+Job passiveScan-wait started
+Job passiveScan-wait finished, time taken: 00:00:00
+Job activeScan started
+Job activeScan finished, time taken: 00:03:12
+Job report started
+Job report invalid risk: informational
+Job report generated report /zap/wrk/reports/zap-report-tp13c.html
+Job report finished, time taken: 00:00:01
+Job report started
+Job report generated report /zap/wrk/reports/zap-report-tp13c.json
+Job report finished, time taken: 00:00:00
+Automation plan warnings:
+	Job report invalid risk: informational

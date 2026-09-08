@@ -1,0 +1,166 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-secret
+  namespace: monitoring
+type: Opaque
+stringData:
+  GF_SECURITY_ADMIN_PASSWORD: changeme
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-svc.monitoring.svc.cluster.local:9090
+        isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: monitoring
+data:
+  provider.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'tp13c'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-notes
+  namespace: monitoring
+data:
+  notes-app.json: |
+    {
+      "title": "Notes App - TP13C",
+      "uid": "tp13c-notes",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "10s",
+      "time": { "from": "now-30m", "to": "now" },
+      "panels": [
+        {
+          "type": "stat", "title": "Requests por segundo",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+          "targets": [{"expr": "sum(rate(notes_http_requests_total[1m]))", "refId": "A"}]
+        },
+        {
+          "type": "stat", "title": "Latencia p50 (s)",
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+          "targets": [{"expr": "histogram_quantile(0.50, sum by (le) (rate(notes_http_request_duration_seconds_bucket[5m])))", "refId": "A"}]
+        },
+        {
+          "type": "stat", "title": "Errores 4xx/5xx por segundo",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+          "targets": [{"expr": "sum(rate(notes_http_errors_total[5m])) or vector(0)", "refId": "A"}]
+        },
+        {
+          "type": "stat", "title": "Pods de backend activos",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+          "targets": [{"expr": "count(up{job=\"notes-backend\"} == 1)", "refId": "A"}]
+        },
+        {
+          "type": "timeseries", "title": "Requests por endpoint",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+          "targets": [{"expr": "sum by (endpoint, method) (rate(notes_http_requests_total[1m]))", "legendFormat": "{{method}} {{endpoint}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries", "title": "Latencia por percentil",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+          "targets": [
+            {"expr": "histogram_quantile(0.50, sum by (le) (rate(notes_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p50", "refId": "A"},
+            {"expr": "histogram_quantile(0.95, sum by (le) (rate(notes_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "B"},
+            {"expr": "histogram_quantile(0.99, sum by (le) (rate(notes_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p99", "refId": "C"}
+          ]
+        },
+        {
+          "type": "timeseries", "title": "Requests por pod (evidencia del scrape por endpoints)",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "targets": [{"expr": "sum by (pod) (rate(notes_http_requests_total[1m]))", "legendFormat": "{{pod}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries", "title": "CPU por nodo (%)",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "targets": [{"expr": "100 - (avg by (node) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{node}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries", "title": "Memoria usada por nodo (bytes)",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+          "targets": [{"expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "legendFormat": "{{node}}", "refId": "A"}]
+        },
+        {
+          "type": "timeseries", "title": "Memoria por contenedor (top 10, cAdvisor)",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+          "targets": [{"expr": "topk(10, sum by (name) (container_memory_usage_bytes{name!=\"\"}))", "legendFormat": "{{name}}", "refId": "A"}]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.2.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+          envFrom:
+            - secretRef:
+                name: grafana-secret
+          volumeMounts:
+            - { name: datasources, mountPath: /etc/grafana/provisioning/datasources }
+            - { name: provider, mountPath: /etc/grafana/provisioning/dashboards }
+            - { name: dashboards, mountPath: /var/lib/grafana/dashboards }
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits: { memory: "512Mi", cpu: "500m" }
+      volumes:
+        - { name: datasources, configMap: { name: grafana-datasources } }
+        - { name: provider, configMap: { name: grafana-dashboard-provider } }
+        - { name: dashboards, configMap: { name: grafana-dashboard-notes } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-svc
+  namespace: monitoring
+spec:
+  type: LoadBalancer
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000

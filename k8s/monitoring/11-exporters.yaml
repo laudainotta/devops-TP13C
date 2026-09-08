@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      hostPID: true
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:v1.8.2
+          args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --path.rootfs=/host/root
+            - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+          ports:
+            - containerPort: 9100
+              name: metrics
+          volumeMounts:
+            - { name: proc, mountPath: /host/proc, readOnly: true }
+            - { name: sys, mountPath: /host/sys, readOnly: true }
+            - { name: root, mountPath: /host/root, readOnly: true }
+          resources:
+            requests: { memory: "32Mi", cpu: "50m" }
+            limits: { memory: "96Mi", cpu: "200m" }
+      volumes:
+        - { name: proc, hostPath: { path: /proc } }
+        - { name: sys, hostPath: { path: /sys } }
+        - { name: root, hostPath: { path: / } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-exporter
+  namespace: monitoring
+spec:
+  clusterIP: None
+  selector:
+    app: node-exporter
+  ports:
+    - name: metrics
+      port: 9100
+      targetPort: 9100
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cadvisor
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: cadvisor
+  template:
+    metadata:
+      labels:
+        app: cadvisor
+    spec:
+      containers:
+        - name: cadvisor
+          image: gcr.io/cadvisor/cadvisor:v0.49.1
+          args:
+            - --housekeeping_interval=15s
+            - --store_container_labels=false
+          ports:
+            - containerPort: 8080
+              name: metrics
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - { name: rootfs, mountPath: /rootfs, readOnly: true }
+            - { name: var-run, mountPath: /var/run, readOnly: true }
+            - { name: sys, mountPath: /sys, readOnly: true }
+            - { name: containerd, mountPath: /var/lib/containerd, readOnly: true }
+          resources:
+            requests: { memory: "96Mi", cpu: "100m" }
+            limits: { memory: "256Mi", cpu: "400m" }
+      volumes:
+        - { name: rootfs, hostPath: { path: / } }
+        - { name: var-run, hostPath: { path: /var/run } }
+        - { name: sys, hostPath: { path: /sys } }
+        - { name: containerd, hostPath: { path: /var/lib/containerd } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadvisor
+  namespace: monitoring
+spec:
+  clusterIP: None
+  selector:
+    app: cadvisor
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: 8080
