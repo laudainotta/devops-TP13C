@@ -50,3 +50,4 @@ kubeconfig*
 __pycache__/
 *.pyc
 backend/app.py.bak
+reports-ci/

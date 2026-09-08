@@ -1,0 +1,16 @@
+=== FASE 4 - CI/CD - 2026-09-08T01:41:22+00:00 ===
+
+Run: 34176692033 | commit 8204689 | 4 jobs en verde
+  lint         ubuntu-latest   8s
+  test         ubuntu-latest   7s
+  build-push   ubuntu-latest   46s
+  deploy-scan  self-hosted     7m40s  (runner vm-vboxuser sobre k3d local)
+
+Job ZAP en k8s: Complete 1/1 en 6m7s, exit 0.
+spider 3 URLs | spiderAjax 7 URLs / 3:00 | activeScan 2:33
+Alertas: 12 warning + 10 note (identicas a la corrida local v3)
+Artifact: zap-reports-8204689... 26733 bytes, retencion 14 dias
+
+Fallo previo (run 34176539182): flake8 sobre backend/tests/test_app.py
+  heredado del TP13B, nunca linteado. 6 errores E402/E303/W391.
+  Ampliar el alcance del linter revelo deuda preexistente.
